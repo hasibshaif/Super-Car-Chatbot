@@ -34,7 +34,7 @@ async function initializeVectorStore() {
     }
 }
 
-const ferrariManualPath = "src/data/Ferrari_458_Spider_Owners_Manual.pdf";
+const ferrariManualPath = "public/data/Ferrari_458_Spider_Owners_Manual.pdf";
 
 const loader = new PDFLoader(ferrariManualPath);
 
