@@ -17,6 +17,10 @@ import path from 'path';
 
 let vectorStore: PineconeStore | null = null;
 let pineconeIndex: any = null;
+let isVectorStoreInitialized = false;
+const ferrariManualPath = path.resolve('public/data/Ferrari_458_Spider_Owners_Manual.pdf');
+const loader = new PDFLoader(ferrariManualPath);
+const docId = 'Ferrari_458_Spider_Manual';
 
 interface PineconeMatch {
     id: string;
@@ -28,10 +32,11 @@ interface PineconeMatch {
 }
 
 async function getVectorStore() {
-  if (!vectorStore) {
+  if (!isVectorStoreInitialized) {
     const result = await initializeVectorStore();
     vectorStore = result.vectorStore;
     pineconeIndex = result.pineconeIndex;
+    isVectorStoreInitialized = true;
   }
   return { vectorStore, pineconeIndex };
 }
@@ -42,13 +47,17 @@ async function initializeVectorStore() {
             model: "text-embedding-3-small",
         });
 
-        const pinecone = new PineconeClient();
+        const pinecone = new PineconeClient({
+            apiKey: process.env.PINECONE_API_KEY!,
+        });
+
         const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
 
         const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
             pineconeIndex,
             maxConcurrency: 5,
         });
+
         return { vectorStore, pineconeIndex };
     } catch (error) {
         console.error("Error initializing vector store:", error);
@@ -56,29 +65,10 @@ async function initializeVectorStore() {
     }
 }
 
-const ferrariManualPath = path.resolve('public/data/Ferrari_458_Spider_Owners_Manual.pdf');
-
-const loader = new PDFLoader(ferrariManualPath);
-
-export const dynamic = 'force-dynamic';
-
-const formatMessage = (message: VercelChatMessage) => {
-    return `${message.role}: ${message.content}`;
-};
-
-const TEMPLATE = `Answer the user's questions based on the following context. If the answer is not in the context, reply politely that you do not have that information available.:
-==============================
-Context: {context}
-==============================
-Current conversation: {chat_history}
-
-user: {question}
-assistant:;`
-
 async function isDocumentIndexed(pineconeIndex: any, docId: string): Promise<boolean> {
     try {
         const queryResponse = await pineconeIndex.query({
-            vector: new Array(1536).fill(0), 
+            vector: new Array(1536).fill(0),
             topK: 1,
             includeMetadata: true,
             filter: {
@@ -106,20 +96,21 @@ export async function POST(req: Request) {
         // Initialize the vector store
         const { vectorStore, pineconeIndex } = await getVectorStore();
 
-        const docId = 'Ferrari_458_Spider_Manual';
+        if (!vectorStore) {
+            throw new Error("Vector store was not initialized properly.");
+        }
 
-        // Check if the document is already indexed
+        // Check if the document is already indexed to avoid redundant indexing
         const isIndexed = await isDocumentIndexed(pineconeIndex, docId);
 
         if (!isIndexed) {
-            // Load the documents
+            // Load and index documents only if they are not already indexed
             const docs = await loader.load();
             if (!docs || docs.length === 0) {
                 return Response.json({ error: "Failed to load documents" }, { status: 500 });
             }
 
-            // Add documents to the vector store with metadata
-            await vectorStore.addDocuments(docs.map((doc, i) => ({
+            await vectorStore.addDocuments(docs.map((doc) => ({
                 ...doc,
                 metadata: { id: docId, text: doc.pageContent }
             })));
@@ -185,3 +176,16 @@ export async function POST(req: Request) {
         return Response.json({ error: e.message }, { status: e.status ?? 500 });
     }
 }
+
+const formatMessage = (message: VercelChatMessage) => {
+    return `${message.role}: ${message.content}`;
+};
+
+const TEMPLATE = `Answer the user's questions based on the following context. If the answer is not in the context, reply politely that you do not have that information available.:
+==============================
+Context: {context}
+==============================
+Current conversation: {chat_history}
+
+user: {question}
+assistant:`;
