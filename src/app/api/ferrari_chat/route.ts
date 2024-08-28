@@ -13,6 +13,7 @@ import { RunnableSequence } from '@langchain/core/runnables';
 import { PineconeStore } from "@langchain/pinecone";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { Pinecone as PineconeClient } from "@pinecone-database/pinecone";
+import path from 'path';
 
 async function initializeVectorStore() {
     try {
@@ -34,7 +35,7 @@ async function initializeVectorStore() {
     }
 }
 
-const ferrariManualPath = "/data/Ferrari_458_Spider_Owners_Manual.pdf";
+const ferrariManualPath = path.resolve('public/data/Ferrari_458_Spider_Owners_Manual.pdf');
 
 const loader = new PDFLoader(ferrariManualPath);
 
