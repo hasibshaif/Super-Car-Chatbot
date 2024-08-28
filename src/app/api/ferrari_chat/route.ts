@@ -15,6 +15,27 @@ import { OpenAIEmbeddings } from "@langchain/openai";
 import { Pinecone as PineconeClient } from "@pinecone-database/pinecone";
 import path from 'path';
 
+let vectorStore: PineconeStore | null = null;
+let pineconeIndex: any = null;
+
+interface PineconeMatch {
+    id: string;
+    score: number;
+    metadata: {
+        text?: string;
+        [key: string]: any;
+    };
+}
+
+async function getVectorStore() {
+  if (!vectorStore) {
+    const result = await initializeVectorStore();
+    vectorStore = result.vectorStore;
+    pineconeIndex = result.pineconeIndex;
+  }
+  return { vectorStore, pineconeIndex };
+}
+
 async function initializeVectorStore() {
     try {
         const embeddings = new OpenAIEmbeddings({
@@ -54,7 +75,6 @@ Current conversation: {chat_history}
 user: {question}
 assistant:;`
 
-// Utility function to check if the document is already indexed in Pinecone
 async function isDocumentIndexed(pineconeIndex: any, docId: string): Promise<boolean> {
     try {
         const queryResponse = await pineconeIndex.query({
@@ -84,7 +104,7 @@ export async function POST(req: Request) {
         const currentMessageContent = messages[messages.length - 1].content;
 
         // Initialize the vector store
-        const { vectorStore, pineconeIndex } = await initializeVectorStore();
+        const { vectorStore, pineconeIndex } = await getVectorStore();
 
         const docId = 'Ferrari_458_Spider_Manual';
 
@@ -121,11 +141,11 @@ export async function POST(req: Request) {
 
         // Extract and format the documents
         const documents = retrievalResults.matches
-        .filter(match => match.metadata?.text) // Only include matches with valid text
-        .map(match => new Document({
-            pageContent: String(match.metadata!.text), // Convert to string safely
-            metadata: { id: match.id }
-        }));
+            .filter((match: PineconeMatch) => match.metadata?.text)
+            .map((match: PineconeMatch) => new Document({
+                pageContent: String(match.metadata!.text),
+                metadata: { id: match.id }
+            }));
 
         const context = formatDocumentsAsString(documents);
 
@@ -145,7 +165,7 @@ export async function POST(req: Request) {
             {
                 question: (input) => input.question,
                 chat_history: (input) => input.chat_history,
-                context: () => context,  // Use the context from Pinecone
+                context: () => context,
             },
             prompt,
             model,
