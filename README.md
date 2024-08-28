@@ -3,8 +3,9 @@
 ## Overview
 
 Super Car Chatbot is an interactive application designed to provide detailed information about supercars by parsing, embedding, and querying their manuals. Currently, the chatbot supports:  
-- Ferrari Spider 458 
-There are plans to expand to other supercars in the future. The application uses advanced AI technologies to process and respond to user queries based on the parsed manual.
+- Ferrari Spider 458
+  
+There are plans to expand to other supercar brands and models in the future. The application uses advanced AI technologies to process and respond to user queries based on the parsed manual.
 
 ## Technologies Used
 
