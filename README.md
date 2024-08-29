@@ -7,6 +7,9 @@ Super Car Chatbot is an interactive application designed to provide detailed inf
   
 There are plans to expand to other supercar brands and models in the future. The application uses advanced AI technologies to process and respond to user queries based on the parsed manual.
 
+## Demo
+https://github.com/user-attachments/assets/e919f287-8cc7-4f51-8ff2-5346c504c8b8
+
 ## Technologies Used
 
 - **Next.js**: A React framework for building server-side rendered applications and static websites.
@@ -21,9 +24,9 @@ There are plans to expand to other supercar brands and models in the future. The
 ## How It Works
 
 1. **Manual Parsing**: The chatbot begins by loading and parsing a supercar manual (currently, the Ferrari Spider 458 manual). This is done using LangChain's `PDFLoader`.
-2. **Embedding Creation**: The parsed content of the manual is embedded using Hugging Face's embedding models. These embeddings are then stored in Pinecone for efficient retrieval.
+2. **Embedding Creation**: The parsed content of the manual is embedded using OpenAI's embedding models. These embeddings are then stored in Pinecone for efficient retrieval.
 3. **Query Processing**: When a user submits a query, the chatbot creates an embedding for the query and retrieves relevant information from Pinecone.
-4. **Response Generation**: The retrieved context is used to generate a response using a large language model (LLM) provided by Hugging Face. The LLM produces a coherent and contextually relevant response based on the query and the manual content.
+4. **Response Generation**: The retrieved context is used to generate a response using an OpenAI large language model (LLM). The LLM produces a coherent and contextually relevant response based on the query and the manual content.
 5. **User Authentication**: Clerk Auth handles user authentication, ensuring secure access to the chatbot's features.
 
 ## Getting Started
